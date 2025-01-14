@@ -42,3 +42,9 @@ model Room {
 
   @@index([userId])
 }
+
+model Faq{
+  id                Int         @id @default(autoincrement())
+  title             String      
+  desc              String
+}

@@ -1,33 +1,49 @@
-import Image from 'next/image'
-import { PrismaClient } from '@prisma/client'
+'use client'
 
-export default async function Home() {
-  const { data } = await getRooms()
+import CategoryList from '@/components/CategoryList'
+import { GridLayout, RoomItem } from '@/components/RoomList'
+import { RoomType } from '@/interface'
+import { useQuery } from 'react-query'
+
+import Loader from '@/components/Loader'
+
+export default function Home() {
+  const fetchRoom = async () => {
+    const data = await fetch('/api/rooms')
+    return data.json()
+  }
+
+  const { data, isError, isLoading } = useQuery('rooms', fetchRoom)
+
+  if (isLoading) {
+    return <Loader className="mt-60 mb-40"></Loader>
+  }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 mb-20 sm:px-4 md:px-8 lg:px-12">
-      {data?.map((room) => (
-        <div key={room.id}>
-          <img
-            src={room?.images?.[0]}
-            alt={room.title}
-            className="rounded-md w-full h-auto object-fit"
-          ></img>
-          <div className="mt-2 font-semibold text-sm">{room.title}</div>
-          <span className="text-xs px-2 py-1 rounded-full bg-black text-white mt-1">
-            {room.category}
-          </span>
-          <div className="mt-1 text-gray-400 text-sm">{room.desc}</div>
-          <div className="mt-1 text-sm">{room.price.toLocaleString()}원</div>
-        </div>
-      ))}
-    </div>
+    <>
+      <CategoryList></CategoryList>
+      <GridLayout>
+        {data?.map((room: RoomType) => (
+          <RoomItem room={room} key={room.id}></RoomItem>
+        ))}
+      </GridLayout>
+    </>
   )
 }
 
 async function getRooms() {
-  const prisma = new PrismaClient()
-  const data = await prisma.room.findMany()
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rooms`, {
+      cache: 'force-cache',
+    })
 
-  return { data }
+    if (!res) {
+      throw new Error('failed to fetch')
+    }
+
+    return res.json()
+  } catch (error) {
+    console.error('Error fetching rooms:', error)
+    throw new Error('Failed to fetch rooms')
+  }
 }
